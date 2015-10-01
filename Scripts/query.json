@@ -1,0 +1,38 @@
+{
+                index: 'dig',
+                type: 'WebPage',
+                body :{
+                    query: {
+                      filtered: {
+                          query: {
+                            match_all: {}
+                        },
+                        filter: {
+
+                           exists: {
+                             field: "availableAtOrFrom.address"
+                         }
+                     }
+                 }
+             }, 
+             aggs: {
+
+                in_address: {
+                   terms: {
+                     field : "availableAtOrFrom.address.addressRegion"
+                 },
+
+
+                 aggs:{
+                  publishers:{
+                    terms:{
+                       field : "mainEntityOfPage.publisher.name"
+                   }
+               }
+           }
+       }
+
+   }
+}
+
+}

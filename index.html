@@ -1,0 +1,67 @@
+﻿<!DOCTYPE html >
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="css/sb-admin.css">
+  <link type="text/css" rel="stylesheet" href="font-awesome/css/font-awesome.min.css">
+
+
+  <script src="Scripts/jquery.js"></script>
+  <script src="Scripts/angular.js"></script>
+  <script src="Scripts/d3.min.js"></script>
+  <script src="Scripts/d3.v3.js"></script>
+  <script src="Scripts/elasticsearch.js"></script>
+  <script src="Scripts/app.js"></script>
+  <script src="Scripts/sparkline.js"></script>
+  <script src="Scripts/require.js"></script>
+
+  <title></title>
+</head>
+<body ng-app="D3Graphics" ng-controller="MainCtrl">
+ <!-- <div id="pieChart"></div>-->
+
+
+ <!-- Navigation -->
+
+ <div id="page-wrapper" ng-init="some_prop = 22">
+  <div class="container-fluid">
+   <div class="row">
+    <div class="col-lg-12">
+      <form role="form">
+        <div class="form-group">
+          <label>Text area</label>
+          <textarea ng-model= "query" rows="10" class="form-control"></textarea>
+        </div>   
+        <input  type="button" class="btn btn-default" ng-click="piechartcontrol.loadPies(query)" value="Submit Button" />
+        <button class="btn btn-default" type="reset">Reset Button</button>
+      </form>
+
+    </div>
+
+  </div>
+  <!-- /.row -->
+  <div class="row">
+    <div class="col-sm-12">
+      <div >
+        <h2>Visualization</h2>
+        <pie-chart control="piechartcontrol"></pie-chart>
+      </div>
+    </div>
+  </div>
+
+
+</div>
+<!-- /.container-fluid -->
+
+</div>
+<!-- /#page-wrapper -->
+
+
+
+
+
+
+</body>
+
+
+</html>
