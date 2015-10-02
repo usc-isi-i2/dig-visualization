@@ -55,20 +55,20 @@ app.directive("pieChart", function() {
 
                 }
                 var dict = {};
-                var aggregationsStates = resp.aggregations.in_address;
-                var statesCount = aggregationsStates.buckets.length;
+                var aggregationsFirstlevel = resp.aggregations.first_level;
+                var firstLevelCount = aggregationsFirstlevel.buckets.length;
 
-                for (var i = 0; i < statesCount; i++) {
+                for (var i = 0; i < firstLevelCount; i++) {
 
                     var colorsArray = [];
-                    var stateBucket = aggregationsStates.buckets[i];
-                    var publishersCount = stateBucket.publishers.buckets.length;
-                    var buckets = stateBucket.publishers.buckets;
-                    var doc_count = stateBucket.doc_count;
+                    var firstLevelBucket = aggregationsFirstlevel.buckets[i];
+                    var secondLevelCount = firstLevelBucket.second_level.buckets.length;
+                    var buckets = firstLevelBucket.second_level.buckets;
+                    var doc_count = firstLevelBucket.doc_count;
                     var myValues = [];
                     var offsetObj = {};
                     var totalDisplayed = 0;
-                    for (j = 0; j < publishersCount && j < 5; j++) {
+                    for (var j = 0; j < secondLevelCount && j < 5; j++) {
 
                         myValues.push(buckets[j].doc_count);
                         offsetObj[j] = buckets[j].key;
@@ -88,7 +88,7 @@ app.directive("pieChart", function() {
                     }
 
                     var remainingValues = 0;
-                    if (j < publishersCount) {
+                    if (j < secondLevelCount) {
 
                         remainingValues = doc_count - totalDisplayed;
                         myValues.push(remainingValues);
@@ -121,7 +121,7 @@ app.directive("pieChart", function() {
 
 
                     });
-                    $("#pieChart" + i).append("<div>" + stateBucket.key + "</div>");
+                    $("#pieChart" + i).append("<div>" + firstLevelBucket.key + "</div>");
 
 
 
