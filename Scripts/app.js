@@ -45,7 +45,7 @@ app.directive("pieChart", function() {
             client.search(queryJson).then(function (resp) {
 
 
-                var colors = ['red', 'green', 'blue', 'orange', 'yellow', 'royalblue', 'cyan', 'indigo', 'rebeccapurple', 'olive'];
+                var colors = d3.scale.category20().range();
                 var colorIndex = 0;
                 function getRandomColor() {
 
