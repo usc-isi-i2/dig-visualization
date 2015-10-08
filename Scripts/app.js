@@ -1,10 +1,11 @@
-﻿//Angular Module
+﻿﻿//Angular Module
 var app = angular.module("D3Graphics", []);
 
 
 app.controller('MainCtrl', function($scope) {
   $scope.piechartcontrol = {
   };
+
 });
 
 
@@ -17,7 +18,7 @@ app.directive("pieChart", function() {
       
         template: function (elem, attr) {
 
-            return '<div id="pieChart"></div>'
+            return '<div id="map"></div>'
 
 
         },  
@@ -35,100 +36,59 @@ app.directive("pieChart", function() {
 
             var client = new elasticsearch.Client({
 
-                host: 'http://localhost:9200/',
+                host: 'http://54.69.161.139:8081/',
 
             });
             var queryJson = {};
-            queryJson.type = 'WebPage';
-            queryJson.index = 'dig';
+            queryJson.type = 'offer';
+            queryJson.index = 'dig-ht-latest';
             queryJson.body = JSON.parse(query);
             client.search(queryJson).then(function (resp) {
-
-
-                var colors = d3.scale.category20().range();
-                var colorIndex = 0;
-                function getRandomColor() {
-
-                    colorIndex = (colorIndex + 1) % colors.length;
-                    return colors[colorIndex];
-
-
-                }
-                var dict = {};
-                var aggregationsFirstlevel = resp.aggregations.first_level;
+		var dict = {};
+                var aggregationsFirstlevel = resp.aggregations.in_offers;
                 var firstLevelCount = aggregationsFirstlevel.buckets.length;
+		
+		 features = '{'+
+       '"type"'+':'+'"FeatureCollection"'+','+
+       '"features"'+': [';
+		
+		for (var i = 0; i < 4; i++) {
+			
+		    var firstLevelBucket = aggregationsFirstlevel.buckets[i];
+                     var doc_count = firstLevelBucket.doc_count;
+		     var radius = doc_count;
 
-                for (var i = 0; i < firstLevelCount; i++) {
-
-                    var colorsArray = [];
-                    var firstLevelBucket = aggregationsFirstlevel.buckets[i];
-                    var secondLevelCount = firstLevelBucket.second_level.buckets.length;
-                    var buckets = firstLevelBucket.second_level.buckets;
-                    var doc_count = firstLevelBucket.doc_count;
-                    var myValues = [];
-                    var offsetObj = {};
-                    var totalDisplayed = 0;
-                    for (var j = 0; j < secondLevelCount && j < 5; j++) {
-
-                        myValues.push(buckets[j].doc_count);
-                        offsetObj[j] = buckets[j].key;
-                        if (dict[buckets[j].key]) {
-
-                            colorsArray[j] = dict[buckets[j].key];
-
-                        }
-                        else {
-
-                            dict[buckets[j].key] = getRandomColor();
-                            colorsArray[j] = dict[buckets[j].key];
-
-                        }
-                        totalDisplayed += buckets[j].doc_count;
-
-                    }
-
-                    var remainingValues = 0;
-                    if (j < secondLevelCount) {
-
-                        remainingValues = doc_count - totalDisplayed;
-                        myValues.push(remainingValues);
-                        offsetObj[j] = "Others";
-                        if (dict["Others"]) {
-
-                            colorsArray[j] = dict["Others"];
-
-                        }
-                        else {
-
-                            dict["Others"] = getRandomColor();
-                            colorsArray[j] = dict["Others"];
-
-                        }
-
-                    }
-
-                    $("#pieChart").append("<div id=\"pieChart" + i + "\"></div>")
-                    $('#pieChart' + i).sparkline(myValues, {
-
-                        type: 'pie',
-                        sliceColors: colorsArray,
-                        tooltipFormat: '{{offset:offset}} ({{percent.1}}%)',
-                        tooltipValueLookups: {
-
-                            'offset': offsetObj
-
-                        },
-
-
-                    });
-                    $("#pieChart" + i).append("<div>" + firstLevelBucket.key + "</div>");
-
-
-
-                }
-
-
-                // D3 code goes here.
+		     var hits = firstLevelBucket.top_tag_hits.hits.hits[0];
+		     var source = hits["_source"];
+		     var longitude = source.availableAtOrFrom.geo.longitude;
+		     var latitude = source.availableAtOrFrom.geo.latitude;
+		     var region = source.availableAtOrFrom.address.addressRegion
+                     
+                
+     		     features+='{';
+			
+			 if(i == 3) {
+			features+= '"geometry"'+' : {'+
+        		'"type"'+':'+'"Point"'+','+
+        		'"coordinates"'+':'+ '['+longitude+','+ latitude+']'+'},"type": "Feature",'+
+     			'"properties"'+' : {'+'"radius"'+':'+radius+','+'"countryName"'+':'+'"'+region+'"'+'}}';
+      
+      		      }
+      		      else{
+      		    
+			features+= '"geometry"'+' : {'+
+        		'"type"'+':'+'"Point"'+','+
+        		'"coordinates"'+':'+ '['+longitude+','+ latitude+']'+'},"type": "Feature",'+
+     			'"properties"'+' : {'+'"radius"'+':'+radius+','+'"countryName"'+':'+'"'+region+'"'+'}},';
+			 
+		
+			}
+			
+		}
+		features+= ']}';
+		alert(features);
+	
+                
             });
             }
 
@@ -142,4 +102,3 @@ app.directive("pieChart", function() {
     };
 
 });
-
