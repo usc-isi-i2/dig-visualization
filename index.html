@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <link rel="stylesheet" href="css/bootstrap.min.css">
-  
+  <link href="css/nv.d3.css" rel="stylesheet"> 
 
 
   <script src="Scripts/jquery.js"></script>
@@ -14,7 +14,46 @@
   <script src="Scripts/sparkline.js"></script>
   <script src="Scripts/require.js"></script>
 
-  <title></title>
+  <script src="Scripts/bower_components/elasticsearch/elasticsearch.js"></script>
+
+  <script>
+
+    require.config({
+    paths: {
+        d3: "Scripts/d3.v3",
+        d3Tip: 'Scripts/bower_components/d3-tip/index',
+        nvd3: "Scripts/nv.d3.min",
+    },
+    shim: {
+        nvd3: {
+          exports: 'nv',
+          deps: ['d3.global']
+        },
+        d3Tip: ['d3']
+    }
+    });
+    define("d3.global", ["d3"], function(_) {
+      d3 = _;
+    });
+    require(["Scripts/main"], function () {})
+  </script>
+
+  <style>
+        text {
+            font: 12px sans-serif;
+        }
+        svg {
+            display: block;
+        }
+        html, body, #bar-graph, svg {
+            margin: 0px;
+            padding: 0px;
+            height: 100%;
+            width: 100%;
+        }
+    </style>
+
+  <title>ElasticSearch Visualizations</title>
 </head>
 <body ng-app="D3Graphics" ng-controller="MainCtrl">
  <!-- <div id="pieChart"></div>-->
@@ -47,14 +86,14 @@
       </div>
     </div>
   </div>
-
-
 </div>
 <!-- /.container-fluid -->
-
 </div>
 <!-- /#page-wrapper -->
-
+<div id="bar-graph">
+        <h3> Timeline </h3>
+        <svg></svg>
+</div>
 
 
 
