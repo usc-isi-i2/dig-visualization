@@ -22,46 +22,46 @@ define(['d3', 'd3Tip', 'nvd3'], function (d3, d3Tip,nv) {
         });
 
     // Viz for sparklines/pie-charts
-    client.search({
-    	index: 'webpage',
-        body :{
-        		query: {
-  filtered: {
-  query: {
-    match_all: {}
-   },
-      filter: {
+  //   client.search({
+  // 		index: 'webpage',
+  //       body :{
+  //       		query: {
+  // filtered: {
+  // query: {
+  //   match_all: {}
+  //  },
+  //     filter: {
         
-       exists: {
-         field: "availableAtOrFrom.address"
-       }
-      }
-    }
-  }, 
-  aggs: {
+  //      exists: {
+  //        field: "availableAtOrFrom.address"
+  //      }
+  //     }
+  //   }
+  // }, 
+  // aggs: {
             
-            in_address: {
-               terms: {
-                 field : "availableAtOrFrom.address.addressRegion"
-               },
+  //           in_address: {
+  //              terms: {
+  //                field : "availableAtOrFrom.address.addressRegion"
+  //              },
     
             
-            aggs:{
-              publishers:{
-                terms:{
-                   field : "mainEntityOfPage.publisher.name"
-                }
-              }
-            }
-            }
+  //           aggs:{
+  //             publishers:{
+  //               terms:{
+  //                  field : "mainEntityOfPage.publisher.name"
+  //               }
+  //             }
+  //           }
+  //           }
       
-         }
-     }
+  //        }
+  //    }
  
-    }).then(function (resp) {
-        console.log(resp);
-        // D3 code goes here.
-    });
+  //   }).then(function (resp) {
+  //       console.log(resp);
+  //       // D3 code goes here.
+  //   });
 
 
 
@@ -110,26 +110,28 @@ define(['d3', 'd3Tip', 'nvd3'], function (d3, d3Tip,nv) {
     }).then(function (resp) {
         console.log(resp);
         // Overall aggregation
-        var ageCounts = resp.responses[0].aggregations.articles_over_time.buckets;
+        var overallTimeCounts = resp.responses[0].aggregations.articles_over_time.buckets;
         var freqs = [];
-        var ages = [];
+        var intervals = [];
         var counts = [];
-        var specificAges = [];
+        var specificEventIntervals = [];
         var specificCounts = [];
 
         // Specific ages
-        var specificAges = resp.responses[1].hits.hits
-        specificAges.forEach( function(obj){
-            var ageFields = obj.fields
-            for(var field in ageFields){
-                var ages = ageFields[field];
-                for (var id in ages){
-                    var specificDateString = ages[id];
+        var specificEventIntervals = resp.responses[1].hits.hits
+        specificEventIntervals.forEach( function(obj){
+            var fields = obj.fields
+            for(var field in fields){
+                var fieldVal = fields[field];
+                for (var id in fieldVal){
+                    var specificDateString = fieldVal[id];
                     var d = new Date(specificDateString);
                     var month = d.getMonth()+1;
-                    if(d.getMonth()<10)
+                    if(month<10)
                         month = "" + 0 + month;
-                    specificAges.push(""+d.getFullYear()+"-"+month);
+                    //specificEventIntervals.push(""+d.getFullYear()+"-"+month);
+                    var newDateString = d.getFullYear() + "-" + month 
+                    specificEventIntervals.push(newDateString)
                 }
             }
         });
@@ -146,76 +148,105 @@ define(['d3', 'd3Tip', 'nvd3'], function (d3, d3Tip,nv) {
         }
 
 
-        ageCounts.forEach( function(obj){
-            var age = obj["key_as_string"];
-            var d = new Date(age);
+        overallTimeCounts.forEach( function(obj){
+            var interval = obj["key_as_string"];
+            var d = new Date(interval);
             var month = d.getMonth()+1;
-            if(d.getMonth()<10)
+            if(month<10)
                 month = "" + 0 + month;
             var dateString = "" + d.getFullYear() + "-" + month
-
-            if (specificAges.indexOf(dateString) > -1) {
-                var ageCount = countInArray(specificAges,dateString);
-                specificCounts.push(ageCount);
-                freqs.push({"age":dateString,"count":0+obj["doc_count"],"specificCount":ageCount*-1})    
+            if (specificEventIntervals.indexOf(dateString) > -1) {
+                var eventCount = countInArray(specificEventIntervals,dateString);
+                specificCounts.push(eventCount);
+                freqs.push({"interval":dateString,"count":0+obj["doc_count"],"specificCount":eventCount})    
             }else {
-                freqs.push({"age":dateString,"count":0+obj["doc_count"],"specificCount":0})
+                freqs.push({"interval":dateString,"count":0+obj["doc_count"],"specificCount":0})
             }
             
 
-            ages.push(dateString)
+            intervals.push(dateString)
             counts.push(0+obj["doc_count"])
         });
-                
+         
+        var data = getData();
+
         try{
             nv.addGraph(function() {
-              var chart = nv.models.discreteBarChart()
+              var chart = nv.models.linePlusBarChart()
                   .width("400")
                   .height("200")
-                  // .forceY("[-80,80]")
-                  .x(function(d) { return d.x })    //Specify the data accessors.
-                  .y(function(d) { return d.y })
-                  .staggerLabels(true)   //Too many bars and not enough room? Try staggering labels.
-                  .showValues(false)
-                  .showXAxis(false)       //...instead, show the bar value right on top of each bar.
+                  .x(function(d,i) { return i })    //Specify the data accessors.
+                  .y(function(d,i) { return d[1] })
+                  .color(d3.scale.category10().range())
+                  //.options({focusEnable: false});;
+                  
+
+              chart.xAxis.tickFormat(function(d) {
+
+                    var dx = data[0].values[d] && data[0].values[d][0] || 0;
+                    return d3.time.format('%Y-%b')(new Date(dx)) 
+              });
+
+              chart.useInteractiveGuideline = true;
+              chart.tooltips=true
+
+              chart.x2Axis.tickFormat(function(d){ var dx = data[0].values[d] && data[0].values[d][0] || 0;
+                    return d3.time.format('%Y-%b')(new Date(dx))  });
+              chart.tooltipContent(function(d){
+                if (d.point) {
+                  var dx = d.point[0]
+                  return "Specific event " + d3.time.format('%Y-%b')(new Date(dx)) + " : " + d.point[1] 
+                }else if ( d.data ){
+                  var dx = d.data[0]
+                  return " Overall timeline " + d3.time.format('%Y-%b')(new Date(dx)) + " : " + d.data[1]
+                }
+
+              })
 
               d3.select('#bar-graph svg')
                 .datum(getData())
                 .call(chart);
               //nv.utils.windowResize(chart.update);
-	      
+
               return chart;
             });
         }catch(e){
-            console.log(e)
+            console.log("Error");
+            console.log(e);
         }
         function getData() {
             var values1 = [];
             var values2 = [];
             freqs.forEach(function( obj){
-                values1.push(
-                {
-                    "x":obj.age,
-                    "y":obj.count
-                });
-                values2.push(
-                {
-                    "x":obj.age,
-                    "y":obj.specificCount
-                });
-            })
+                // values1.push(
+                // {
+                //     "x":obj.age,
+                //     "y":obj.count
+                // });
+                
+                // values2.push(
+                // {
+                //     "x":obj.age,
+                //     "y":obj.specificCount
+                // });
+
+              values1.push([obj.interval,obj.count]);
+              values2.push([obj.interval,obj.specificCount]);
+            });
 
             return [
             {
-                key:"Interval1",
+                key:"Overall timeline",
                 values: values1,
-                "type": "line",
-                "yAxis": 1
+                bar:true,
+                "yAxis": 1,
+                tooltip: {
+                valueSuffix: ' mm'
+              }
             },
             {
-                key:"Interval2",
+                key:"Specific Event",
                 values: values2,
-                "type": "bar",
                 "yAxis": 2
             }
         ]
