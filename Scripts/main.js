@@ -2,12 +2,6 @@
 define(['d3', 'd3Tip', 'nvd3'], function (d3, d3Tip,nv) {
     "use strict";
 
-    // var client = new elasticsearch.Client({
-    //     host: 'http://localhost:9200/',
-       
-       
-    // });
-
     var client = new elasticsearch.Client({
         host : [
             {
@@ -20,6 +14,23 @@ define(['d3', 'd3Tip', 'nvd3'], function (d3, d3Tip,nv) {
             }
           ]
         });
+
+    // Draw timeline based on radio button on click
+    var rad = document.timelinespan.span;
+    var prev = null;
+    for(var i = 0; i < rad.length; i++) {
+        rad[i].onclick = function() {
+            (prev)? console.log(prev.value):null;
+            if(this !== prev) {
+                prev = this;
+            }
+            var span = this.value
+            d3.selectAll("svg > *").remove();
+            drawTimeline(client,d3,d3Tip,nv,span,"");
+        };
+    }
+
+    
 
     // Viz for sparklines/pie-charts
   //   client.search({
@@ -63,12 +74,23 @@ define(['d3', 'd3Tip', 'nvd3'], function (d3, d3Tip,nv) {
   //       // D3 code goes here.
   //   });
 
+});
 
+function countInArray(array, what) {
+  var count = 0;
+  for (var i = 0; i < array.length; i++) {
+    if (array[i] === what) {
+      count++;
+    }
+  }
+  return count;
+}
 
-
-
+function drawTimeline(client,d3,d3Tip,nv,span,secondQuery){
 
     // Viz for bar chart
+    if (span != "month" && span != "year")
+      span = "month"
     client.msearch({
         index: 'offer',
         body:[
@@ -79,7 +101,7 @@ define(['d3', 'd3Tip', 'nvd3'], function (d3, d3Tip,nv) {
                     articles_over_time : {
                         date_histogram : {
                             field : "validFrom",
-                            interval : "month"
+                            interval : span
                         }
                     }
                 },
@@ -109,52 +131,60 @@ define(['d3', 'd3Tip', 'nvd3'], function (d3, d3Tip,nv) {
         ]
     }).then(function (resp) {
         console.log(resp);
-        // Overall aggregation
-        var overallTimeCounts = resp.responses[0].aggregations.articles_over_time.buckets;
+        
         var freqs = [];
         var intervals = [];
         var counts = [];
         var specificEventIntervals = [];
         var specificCounts = [];
+        // Overall aggregation
+        var overallTimeCounts = resp.responses[0].aggregations.articles_over_time.buckets;
 
+        if( resp.responses.length == 2 ){
         // Specific ages
-        var specificEventIntervals = resp.responses[1].hits.hits
-        specificEventIntervals.forEach( function(obj){
+        specificEventIntervals = resp.responses[1].hits.hits
+        }
+        
+        if(specificEventIntervals.length > 0 ){
+          specificEventIntervals.forEach( function(obj){
             var fields = obj.fields
             for(var field in fields){
+                
                 var fieldVal = fields[field];
                 for (var id in fieldVal){
+                    
                     var specificDateString = fieldVal[id];
                     var d = new Date(specificDateString);
-                    var month = d.getMonth()+1;
-                    if(month<10)
-                        month = "" + 0 + month;
-                    //specificEventIntervals.push(""+d.getFullYear()+"-"+month);
-                    var newDateString = d.getFullYear() + "-" + month 
+                    var newDateString = ""
+                    if ( span == "month" ){
+                      var month = d.getUTCMonth()+1;
+                      if(month<10)
+                          month = "" + 0 + month;
+                      //specificEventIntervals.push(""+d.getFullYear()+"-"+month);
+                       newDateString = d.getUTCFullYear() + "-" + month 
+                    } else {
+                      newDateString = "" + d.getUTCFullYear()
+                    }
+                    
                     specificEventIntervals.push(newDateString)
                 }
             }
-        });
-
-
-        function countInArray(array, what) {
-            var count = 0;
-            for (var i = 0; i < array.length; i++) {
-                if (array[i] === what) {
-                    count++;
-                }
-            }
-            return count;
+          });
         }
-
-
+    
         overallTimeCounts.forEach( function(obj){
             var interval = obj["key_as_string"];
             var d = new Date(interval);
-            var month = d.getMonth()+1;
-            if(month<10)
-                month = "" + 0 + month;
-            var dateString = "" + d.getFullYear() + "-" + month
+            var dateString = ""
+            if ( span == "month" ){
+              var month = d.getUTCMonth()+1;
+              if(month<10)
+                  month = "" + 0 + month;
+              dateString = "" + d.getUTCFullYear() + "-" + month
+            }else {
+              dateString = "" + d.getUTCFullYear()
+            }
+
             if (specificEventIntervals.indexOf(dateString) > -1) {
                 var eventCount = countInArray(specificEventIntervals,dateString);
                 specificCounts.push(eventCount);
@@ -171,11 +201,12 @@ define(['d3', 'd3Tip', 'nvd3'], function (d3, d3Tip,nv) {
         var data = getData();
 
         try{
+
             nv.addGraph(function() {
               var chart = nv.models.linePlusBarChart()
-                  .width("400")
+                  //.width("800")
                   .height("200")
-                  .x(function(d,i) { return i })    //Specify the data accessors.
+                  .x(function(d,i) { return i })   
                   .y(function(d,i) { return d[1] })
                   .color(d3.scale.category10().range())
                   //.options({focusEnable: false});;
@@ -184,24 +215,45 @@ define(['d3', 'd3Tip', 'nvd3'], function (d3, d3Tip,nv) {
               chart.xAxis.tickFormat(function(d) {
 
                     var dx = data[0].values[d] && data[0].values[d][0] || 0;
-                    return d3.time.format('%Y-%b')(new Date(dx)) 
+                    if (dx == 0)
+                      return ""
+                    if( span == "month" )
+                      return d3.time.format.utc('%Y-%b')(new Date(dx))
+                    else
+                      return d3.time.format.utc('%Y')(new Date(dx))
               });
 
               chart.useInteractiveGuideline = true;
               chart.tooltips=true
 
-              chart.x2Axis.tickFormat(function(d){ var dx = data[0].values[d] && data[0].values[d][0] || 0;
-                    return d3.time.format('%Y-%b')(new Date(dx))  });
+              chart.x2Axis.tickFormat(function(d){ 
+                    var dx = data[0].values[d] && data[0].values[d][0] || 0;
+                    if (dx == 0)
+                      return ""
+                    if( span == "month" )
+                      return d3.time.format.utc('%Y-%b')(new Date(dx))
+                    else
+                      return d3.time.format.utc('%Y')(new Date(dx))  });
+
               chart.tooltipContent(function(d){
                 if (d.point) {
                   var dx = d.point[0]
-                  return "Specific event " + d3.time.format('%Y-%b')(new Date(dx)) + " : " + d.point[1] 
+                  if (dx == 0)
+                      return ""
+                  if( span == "month" )
+                    return "Specific event " + d3.time.format.utc('%Y-%b')(new Date(dx)) + " : " + d.point[1]
+                  else
+                     return "Specific event " + d3.time.format.utc('%Y')(new Date(dx)) + " : " + d.point[1]
                 }else if ( d.data ){
                   var dx = d.data[0]
-                  return " Overall timeline " + d3.time.format('%Y-%b')(new Date(dx)) + " : " + d.data[1]
+                  if( span == "month" )
+                    return " Overall timeline " + d3.time.format.utc('%Y-%b')(new Date(dx)) + " : " + d.data[1]
+                  else
+                    return " Overall timeline " + d3.time.format.utc('%Y')(new Date(dx)) + " : " + d.data[1]
                 }
 
               })
+
 
               d3.select('#bar-graph svg')
                 .datum(getData())
@@ -218,38 +270,27 @@ define(['d3', 'd3Tip', 'nvd3'], function (d3, d3Tip,nv) {
             var values1 = [];
             var values2 = [];
             freqs.forEach(function( obj){
-                // values1.push(
-                // {
-                //     "x":obj.age,
-                //     "y":obj.count
-                // });
-                
-                // values2.push(
-                // {
-                //     "x":obj.age,
-                //     "y":obj.specificCount
-                // });
-
               values1.push([obj.interval,obj.count]);
-              values2.push([obj.interval,obj.specificCount]);
+
+              if ( specificEventIntervals.length > 0 )
+                values2.push([obj.interval,obj.specificCount]);
             });
 
             return [
-            {
-                key:"Overall timeline",
-                values: values1,
-                bar:true,
-                "yAxis": 1,
-                tooltip: {
-                valueSuffix: ' mm'
-              }
-            },
-            {
-                key:"Specific Event",
-                values: values2,
-                "yAxis": 2
-            }
-        ]
-    };
-  });
-});
+                    {
+                      key:"Overall timeline",
+                      values: values1,
+                      bar:true,
+                      "yAxis": 1
+                    },
+                    {
+                      key:"Specific Event",
+                      values: values2,
+                      "yAxis": 2
+                    }
+                  ]
+            
+        };
+    });
+
+}
