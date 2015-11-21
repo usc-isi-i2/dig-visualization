@@ -74,17 +74,18 @@ function getSpan(client,moment){
     var minMoment = moment(minDate);
     var maxMoment = moment(maxDate);
     var years = maxMoment.diff(minMoment,'years')
-    if (years > 3)
+    return "week"
+    if (years > 4)
       return "year"
     else{
       var months = maxMoment.diff(minMoment,'months')
-      if (months > 3)
+      if (months > 4)
         return "month"
       else{
         var days = maxMoment.diff(minMoment,"days")
         if (days > 21)
           return "week"
-        else if (days > 3)
+        else if (days > 4)
           return "day"
         else return "hour"
       }
@@ -159,7 +160,7 @@ function drawTimeline(client,d3,d3Tip,nv,span,secondQuery){
                         }
                       }
                     },
-		    size:500
+                    size:500
                   }
       console.log(secondQuery)
     }
