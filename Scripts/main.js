@@ -14,54 +14,31 @@ define(['d3', 'd3Tip', 'nvd3', 'moment'], function (d3, d3Tip,nv,moment) {
             }
           ]
         });
-    
-   getSpan(client,moment).then( function(span){
+
+    getSpan(client,moment).then( function(span){
+      d3.selectAll("svg > *").remove();
       drawTimeline(client,d3,d3Tip,nv,span,"")
     });
 
-    
-
-    // Viz for sparklines/pie-charts
-  //   client.search({
-  // 		index: 'webpage',
-  //       body :{
-  //       		query: {
-  // filtered: {
-  // query: {
-  //   match_all: {}
-  //  },
-  //     filter: {
-        
-  //      exists: {
-  //        field: "availableAtOrFrom.address"
-  //      }
-  //     }
-  //   }
-  // }, 
-  // aggs: {
-            
-  //           in_address: {
-  //              terms: {
-  //                field : "availableAtOrFrom.address.addressRegion"
-  //              },
-    
-            
-  //           aggs:{
-  //             publishers:{
-  //               terms:{
-  //                  field : "mainEntityOfPage.publisher.name"
-  //               }
-  //             }
-  //           }
-  //           }
+    var ele = document.getElementById("formsubmit");
+    function getSecondQuery(){
+      getSpan(client,moment).then( function(span){
+        var query = document.getElementById("query").value
+        d3.selectAll("svg > *").remove();
+        drawTimeline(client,d3,d3Tip,nv,span,query)
+    });
       
-  //        }
-  //    }
- 
-  //   }).then(function (resp) {
-  //       console.log(resp);
-  //       // D3 code goes here.
-  //   });
+    }
+    ele.onclick = getSecondQuery
+
+    var reset = document.getElementById("formreset");
+    function resetQuery(){
+      getSpan(client,moment).then( function(span){
+        d3.selectAll("svg > *").remove();
+        drawTimeline(client,d3,d3Tip,nv,span,"")
+      });
+    }
+    reset.onclick = resetQuery
 
 });
 
@@ -128,7 +105,7 @@ function getDateStringBySpan(dateObject,span){
       newDateString = d.getUTCFullYear() + "-" + month 
   } else if ( span == "week" ){
     d.setDate(d.getDate()-d.getUTCDay());
-    
+
     var month = d.getUTCMonth()+1;
     if(month<10)
         month = "" + 0 + month;
@@ -163,7 +140,29 @@ function getDateFormatBySpan(dateString,span){
 function drawTimeline(client,d3,d3Tip,nv,span,secondQuery){
 
     // Viz for bar chart
-    
+    if (secondQuery != ""){
+      secondQuery = {
+                      fields: [
+                        "validFrom"
+                      ],
+                      query:{
+                        filtered: {
+                          query: {
+                            match: {
+                              _all: secondQuery
+                            }
+                          },
+                        filter: {
+                          exists: {
+                            field: "validFrom"
+                          }
+                        }
+                      }
+                    }
+                  }
+      console.log(secondQuery)
+    }
+
     client.msearch({
         index: 'offer',
         body:[
@@ -182,25 +181,8 @@ function drawTimeline(client,d3,d3Tip,nv,span,secondQuery){
                 size:"0"
             },
             { _index: 'offer' },
-            {
-               fields: [
-                   "validFrom"
-                ],
-               filter: {
-                  and: [
-                     {
-                        exists: {
-                           field: "validFrom"
-                        }
-                     },
-                     {
-                            match_all: {
-                                "availableAtOrFrom.name" : "Buffalo"
-                            }
-                        }
-                  ]
-               }
-            }
+            secondQuery != "" ? secondQuery : ""
+            
             
         ]
     }).then(function (resp) {
@@ -325,7 +307,8 @@ function drawTimeline(client,d3,d3Tip,nv,span,secondQuery){
                 values2.push([obj.interval,obj.specificCount]);
             });
 
-            return [
+            if ( values2.length > 0 ){
+              return [
                     {
                       key:"Overall timeline",
                       values: values1,
@@ -338,6 +321,17 @@ function drawTimeline(client,d3,d3Tip,nv,span,secondQuery){
                       "yAxis": 2
                     }
                   ]
+                }else {
+                  return [
+                    {
+                      key:"Overall timeline",
+                      values: values1,
+                      bar:true,
+                      "yAxis": 1
+                    }
+                  ]
+                }
+            
             
         };
     });
