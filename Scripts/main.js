@@ -158,7 +158,8 @@ function drawTimeline(client,d3,d3Tip,nv,span,secondQuery){
                           }
                         }
                       }
-                    }
+                    },
+		    size:500
                   }
       console.log(secondQuery)
     }
