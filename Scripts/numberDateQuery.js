@@ -1,6 +1,6 @@
 var numDateQuery = {query: {
     match: {
-      "mainEntity.seller.telephone.name": "4162584934" 
+      "mainEntity.seller.telephone.name": "" 
     }
   },
                     
