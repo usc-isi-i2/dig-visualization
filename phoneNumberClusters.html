@@ -1,0 +1,156 @@
+<!doctype html>
+<meta http-equiv="X-UA-Compatible" content="IE=Edge">
+<html>
+   <head>
+      <title>Dig Visualization - Phone Number Clusters</title>
+      <meta name="description" content="">
+      <meta name="viewport" content="width=device-width">
+      <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css" />
+	  <link rel="stylesheet" href="css/MarkerCluster.css" />
+	  <link rel="stylesheet" href="css/MarkerCluster.Default.css" />
+    
+      <script src="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js"></script>
+      <script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.2.3"></script>      
+      <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+	  <script src="Scripts/elasticsearch.js"></script>
+	  <script src="js/leaflet.markercluster-src.js"></script>
+	  <script src="Scripts/bower_components/elasticsearch/elasticsearch.js"></script>
+	  <script src="http://maps.google.com/maps/api/js?v=3.2&sensor=false"></script>
+	  <script src="js/Google.js"></script>
+
+   </head>
+   <body>
+      <div id="map"></div>
+   </body>
+   <style>
+      body { margin:0; padding:0; }
+      #map {
+      position:absolute;
+      top:0;
+      left:0;
+      right:0;
+      bottom:0;
+      height: 100%;
+      }
+   </style>
+   <script>
+      
+     var client = new elasticsearch.Client({
+        host : [
+            {
+              host: '54.69.161.139',
+              headers:{'Authorization' : 'Basic ZGFycGFtZW1leDpkYXJwYW1lbWV4'},
+              protocol: 'http',
+              port: '8081',
+              path: 'dig-ht-latest',
+              log: 'trace'
+            }
+          ]
+        });
+		
+	
+	 client.search({
+  		type: 'seller',
+        body :{
+   query: {
+      filtered: {
+         filter: {
+            exists: {
+               field: "makesOffer.availableAtOrFrom.geo"
+            }
+         }
+      }
+   },
+   aggs: {
+      in_phone: {
+         terms: {
+            field: "telephone.name",
+            size: 20
+         },
+         aggs: {
+            in_address: {
+               terms: {
+                  field: "makesOffer.availableAtOrFrom.address.addressLocality",
+                  size: 20
+               },
+               aggs: {
+                  top_tag_hits: {
+                     top_hits: {
+                        size: 1,
+                        _source: {
+                           include: [
+                              "makesOffer.availableAtOrFrom.geo",
+                              "makesOffer.availableAtOrFrom.address.addressLocality"
+                           ]
+                        }
+                     }
+                  }
+               }
+            }
+         }
+      }
+   },
+   size: 0
+}
+ 
+    }).then(function (resp) {
+        console.log(resp);
+        // D3 code goes here.
+		var firstLevelbucketItems = resp.aggregations.in_phone.buckets;
+		var firstLevelbucketCount = resp.aggregations.in_phone.buckets.length;
+		
+		var addressPoints = [];
+		var numbeList = [];
+        var l = 0;		
+		for(var i=0;i<firstLevelbucketCount;i++)
+		{
+			var secondLevelbucketItems = firstLevelbucketItems[i].in_address.buckets;
+			var secondLevelbucketCount = firstLevelbucketItems[i].in_address.buckets.length;
+			var number = firstLevelbucketItems[i].key;
+			for(var k=0;k<secondLevelbucketCount;k++)
+			{
+				var address = "";
+				var latitude = 0, longitude = 0;
+				var makesOffer = secondLevelbucketItems[k].top_tag_hits.hits.hits[0]._source.makesOffer[0];
+				if(makesOffer)
+				{
+					points = [];
+					points[0] = makesOffer.availableAtOrFrom.geo.lat;
+					points[1] = makesOffer.availableAtOrFrom.geo.lon;
+					addressPoints[l] = points;
+					numbeList[l] = number;
+					l+=1;
+				}
+		
+			}
+			
+		}
+	
+		display(addressPoints,numbeList);
+		
+		   });	
+	
+	function display(points,phoneList)
+	{
+      
+      console.log(points);
+      var map = new L.Map('map', {center: new L.LatLng(34.052234, -118.243685), zoom: 4});
+	  var gmap_layer = new L.Google('ROADMAP');
+	  map.addLayer(gmap_layer);
+	  var markers = L.markerClusterGroup();
+		
+		for (var i = 0; i < points.length; i++) {
+			var a = points[i];
+			var title = a[2];
+			var marker = L.marker(new L.LatLng(a[0], a[1]), { title: title });
+			marker.bindPopup(phoneList[i]);
+			markers.addLayer(marker);
+		}
+
+	  map.addLayer(markers);
+
+
+ 
+    }
+   </script>
+</html>

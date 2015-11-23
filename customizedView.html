@@ -1,0 +1,217 @@
+<html>
+<head>
+<title>Dig Visualization for a phone number</title>
+  <meta name="description" content="">
+      <meta name="viewport" content="width=device-width">
+      <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css" />
+      <!--[if lte IE 8]>
+      <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.ie.css" />
+      <![endif]-->
+      <script src="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js"></script>
+      <script type="text/javascript" src="http://maps.stamen.com/js/tile.stamen.js?v1.2.3"></script>      
+      <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+	   <script src="Scripts/elasticsearch.js"></script>
+	    <script src="Scripts/bower_components/elasticsearch/elasticsearch.js"></script>
+		<script src="http://maps.google.com/maps/api/js?v=3.2&sensor=false"></script>
+		<script src="js/Google.js"></script>
+ <script type="text/javascript">
+ 
+ var client = new elasticsearch.Client({
+        host : [
+            {
+              host: '54.69.161.139',
+              headers:{'Authorization' : 'Basic ZGFycGFtZW1leDpkYXJwYW1lbWV4'},
+              protocol: 'http',
+              port: '8081',
+              path: 'dig-ht-latest',
+              log: 'trace'
+            }
+          ]
+        });
+		
+window.onload = function () {
+  var phoneNumber = window.location.search.substr(1).split("=")[1];
+
+  customizedView( phoneNumber );
+};
+function getRandomInRange(from, to, fixed) {
+    return (Math.random() * (to - from) + from).toFixed(fixed) * 1;
+   
+}
+function customizedView( phoneNumber )
+{
+	//phoneNumber = "9493909122";
+	var colors = ["rgb(229,131,0)","rgb(0,210,15)","rgb(0,80,191)","rgb(221,0,6)","rgb(213,0,133)",
+						"rgb(91,101,114)","rgb(60,39,11)","rgb(114,67,117)","rgb(248,249,31)","rgb(130,130,130)"];
+	
+	var color = getRandomInRange(0,5,1);
+	var circleColor = colors[Math.round(color)];
+		
+	 client.search({
+  		type: 'seller',
+        body :{
+ query: {
+  filtered: {
+  query: {
+   filtered: {
+            filter: {
+                term: { "telephone.name": phoneNumber }
+            }
+        }
+   },
+      filter: {
+         exists: {
+        field: "makesOffer.availableAtOrFrom.geo"
+       }
+      }
+    }
+  },
+  aggs: {
+            in_address: {
+               terms: {
+                  field: "makesOffer.availableAtOrFrom.address.addressLocality",
+                  size: 100
+               },
+               aggs: {
+                  top_tag_hits: {
+                     top_hits: {
+                        size: 1,
+                        _source: {
+                           include: [
+                              "makesOffer.availableAtOrFrom.geo",
+                              "makesOffer.availableAtOrFrom.address.addressLocality"
+                           ]
+                        }
+                     }
+                  }
+               }
+            }
+         },
+  size:0
+}
+    }).then(function (resp) {
+	
+	var firstLevelbucketItems = resp.aggregations.in_address.buckets;
+		var firstLevelbucketCount = resp.aggregations.in_address.buckets.length;
+		var features = "";
+		var jsonData = "";
+		
+		var j = 0;
+		for(var i=0;i<firstLevelbucketCount;i++)
+		{
+			 var city = firstLevelbucketItems[i].key;
+			 var radius = firstLevelbucketItems[i].doc_count
+			 var plottingRadius =  10+ Math.log(radius);
+				
+				
+				var makesOffer = firstLevelbucketItems[i].top_tag_hits.hits.hits[0]._source.makesOffer[0];
+				if(makesOffer)
+				{
+					address = makesOffer.availableAtOrFrom.address[0].addressLocality;
+					longitude = makesOffer.availableAtOrFrom.geo.lat;
+					latitude = makesOffer.availableAtOrFrom.geo.lon;
+					
+					if(i == firstLevelbucketCount-1)
+					{
+					
+					features+= '{"geometry"'+' : {'+
+					'"type"'+':'+'"Point"'+','+
+					'"coordinates"'+':'+ '['+latitude+','+ longitude+']'+
+					'},"type": "Feature",'+
+					'"properties"'+' : {'+'"radius"'+':'+radius+','+'"plottingRadius"'+':'+plottingRadius+','+'"color"'+':'+'"'+circleColor+'"'+
+					','+'"place"'+':'+'"'+address+'"'+','+'"phoneNumber"'+':'+'"'+phoneNumber+'"'+'}}';
+      
+					}
+					else 
+					{
+				
+					
+					features+= '{"geometry"'+' : {'+
+					'"type"'+':'+'"Point"'+','+
+					'"coordinates"'+':'+ '['+latitude+','+ longitude+']'+
+					'},"type": "Feature",'+
+					'"properties"'+' : {'+'"radius"'+':'+radius+','+'"plottingRadius"'+':'+plottingRadius+','+'"color"'+':'+'"'+circleColor+'"'+
+					','+'"place"'+':'+'"'+address+'"'+','+'"phoneNumber"'+':'+'"'+phoneNumber+'"'+'}},';
+      
+      
+					}	
+					}
+				
+		}
+		
+		jsonData = '{'+
+       '"type"'+':'+'"FeatureCollection"'+','+
+       '"features"'+': ['+features+']}';
+	   console.log(jsonData);
+	display(jsonData);
+				
+	});
+	
+	
+}
+
+ function display(data)
+      {
+      
+      var geojson = JSON.parse(data);
+
+    
+      var map = new L.Map('map', {center: new L.LatLng(43.6481, -79.4042), zoom: 4});
+var gmap_layer = new L.Google('ROADMAP');
+map.addLayer(gmap_layer);
+
+      function style(feature,colorValue) {
+      return {
+              fillColor:colorValue,
+              color: "#fff",
+              weight: 2,
+              opacity: 1,
+              fillOpacity: 1
+      };
+      }
+      
+         
+          // load the geojson to the map with marker styling
+          L.geoJson(geojson,{
+              pointToLayer: function (feature, latlng) {
+					console.log(latlng);
+                  var popupOptions = {maxWidth: 200};
+                  var circleColor = feature.properties.color;
+				  var radius = feature.properties.radius;
+				  var plottingRadius = feature.properties.plottingRadius;
+				   var popupContent = feature.properties.phoneNumber+" appears "+radius+" times in this city";
+                  var marker = L.circleMarker(latlng,style(feature,circleColor));
+				
+      	          marker.setRadius(plottingRadius).bindPopup(popupContent,popupOptions);
+      
+      
+      return marker
+              }
+          }).addTo(map);
+      }
+      
+      
+
+    </script>
+</head>
+ <style>
+      body { margin:0; padding:0; }
+      #map {
+      position:absolute;
+      top:0;
+      left:0;
+      right:0;
+      bottom:0;
+      height:100%;
+      }
+   </style>
+<body>
+
+<div id="map">
+</div>
+
+<br/>
+<br/>
+   
+</body>
+</html>
