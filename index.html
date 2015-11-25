@@ -2,10 +2,19 @@
 <html xmlns="http://www.w3.org/1999/xhtml">
 <head>
   <link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.css" />
+  <link rel="stylesheet" href="css/MarkerCluster.css" />
+  <link rel="stylesheet" href="css/MarkerCluster.Default.css" />
   <link rel="stylesheet" href="css/bootstrap.min.css">
   <link href="css/nv.d3.css" rel="stylesheet">
 
 
+  
+  <script src="http://cdn.leafletjs.com/leaflet-0.6.4/leaflet.js"></script>
+  <script src="js/leaflet.markercluster-src.js"></script>
+  <script src="http://maps.stamen.com/js/tile.stamen.js?v1.2.3"></script>      
+  <script src="http://ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js"></script>
+  <script src="http://maps.google.com/maps/api/js?v=3.2&sensor=false"></script>
+  <script src="js/Google.js"></script>
   <script src="Scripts/jquery.js"></script>
   <script src="Scripts/angular.js"></script>
   <script src="Scripts/d3.min.js"></script>
@@ -41,8 +50,8 @@
       d3 = _;
     });
     require(["Scripts/main"], function () {})
+    require(["Scripts/maps"], function () {})
   </script>
-
   <style>
         text {
             font: 12px sans-serif;
@@ -50,11 +59,16 @@
         svg {
             display: block;
         }
-        html, body, #bar-graph, svg {
+        html, body, #bar-graph  {
             margin: 5px;
-            padding: 0px;
+            padding: 5px;
             height: 100%;
             width: 100%;
+        }
+        
+        #map {
+            height: 400px; 
+            width:90%
         }
         .jqstooltip {
           -webkit-box-sizing: content-box;
@@ -75,49 +89,56 @@
   <div class="container">
 
    <div class="row">
-    <div class="col-lg-4">
-      <form role="form">
-        <div class = "well well-sm">
-          <div class="form-group">
-            <label>Search string</label>
-            <input type="text" ng-model= "query" class="form-control" id="query"></input>
-          </div>   
-          <input  type="button" class="btn btn-default" ng-click="callSubmit()" value="Submit" id="formsubmit"/>
-         <button class="btn btn-default" type="reset" id="formreset">Reset</button>
-        </div>
-      </form>
-    </div>
-    <div class="col-lg-2"></div>
     <div class="col-lg-6">
-      <a href="phoneNumberClusters.html"> Overall Phone Number Clusters Map View </a>
+      <form role="form">
+          <div class="form-group form-group-sm">
+              <label class="col-sm-1 control-label" for="sm" >Search</label>
+              <div class="col-sm-4">
+                <input type="text" ng-model= "query" class="form-control" id="query"></input>
+              </div>
+              <div class="col-lg-4">
+                <input  type="button" class="btn btn-default" ng-click="callSubmit()" value="Submit" id="formsubmit"/>
+                <button class="btn btn-default" type="reset" id="formreset">Reset</button>
+              </div>
+            </div>
+        </form>
+      </div>
+      
     </div>
   </div>
-  <br/>
-  <div class="row">
-      <div ng-repeat="phoneNumber in phoneNumbers">
-        <div class="col-lg-4">  
-          <a href="customizedView.html?number={{phoneNumber.number}}">{{phoneNumber.number}}</a>
-           <pie-chart id="pieChart-{{phoneNumber.number}}" dispVal = "State - " idVal="{{phoneNumber.number}}" valueQuery="mainEntity.availableAtOrFrom.address.addressRegion"  number="{{phoneNumber.number}}"></pie-chart>
-           <pie-chart id="pieChart-{{$index}}" idVal="{{$index}}" dispVal = "Age - " valueQuery="mainEntity.itemOffered.personAge"  number="{{phoneNumber.number}}"></pie-chart>
-           <line-chart id="lineChart-{{$index}}" idVal="{{$index}}"   number="{{phoneNumber.number}}"></line-chart>
+  <div class-"row">
+    <div class="col-lg-1"></div>
+    <div class="col-lg-4">
+      <div class="btn-group" data-toggle="buttons">    
+        <div ng-repeat="phoneNumber in phoneNumbers">
+          <div class="btn-group" data-toggle="buttons-checkbox">
+            <input type="checkbox" id="checkbox-{{phoneNumber.number}}" data-toggle="button" name="phone-checkbox" onclick="addPhoneNumbers()">
+            <label class="btn btn-primary btn-xs" for="checkbox-{{phoneNumber.number}}" id="glyph-button-{{phoneNumber.number}}">
+              <span class="glyphicon glyphicon-globe"></span>
+            </label>
+          </div>
+        
+          {{phoneNumber.number}}
+          <pie-chart id="pieChart-{{phoneNumber.number}}" dispVal = "State - " idVal="{{phoneNumber.number}}" valueQuery="mainEntity.availableAtOrFrom.address.addressRegion"  number="{{phoneNumber.number}}"></pie-chart>
+          <pie-chart id="pieChart-{{$index}}" idVal="{{$index}}" dispVal = "Age - " valueQuery="mainEntity.itemOffered.personAge"  number="{{phoneNumber.number}}"></pie-chart>
+          <line-chart id="lineChart-{{$index}}" idVal="{{$index}}"   number="{{phoneNumber.number}}"></line-chart>
         </div>
       </div>
+      <!-- /.button group -->
+    </div>
+    <div class="col-lg-7">
+          <div id="phone-map"></div>
+      <!-- Map goes here -->
+    </div>
   </div>
+</div>
   <!-- /.row -->
-  </div>
-  <!-- /.container-fluid -->
+  <!-- /.container -->
+</div>
+<div id="bar-graph"> 
+        <svg></svg> 
 </div>
 <!-- /#page-wrapper -->
-<div id="bar-graph">
-  <div>
-  </div>
-  <svg></svg>
-</div>
-
-
-
-
-
 </body>
 
 

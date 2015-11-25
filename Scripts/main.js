@@ -251,7 +251,7 @@ function drawTimeline(client,d3,d3Tip,nv,span,secondQuery){
                   .x(function(d,i) { return i })   
                   .y(function(d,i) { return d[1] })
                   .color(d3.scale.category10().range())
-                  //.options({focusEnable: false});;
+                  .options({focusEnable: false});
                   
 
               chart.xAxis.tickFormat(function(d) {
