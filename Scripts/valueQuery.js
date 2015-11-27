@@ -11,7 +11,8 @@ var aggOnPhoneQuery = {
                  aggs: {
                      first_level:{
                 terms:{
-                   field : "mainEntity.availableAtOrFrom.address.addressRegion"
+                   field : "mainEntity.availableAtOrFrom.address.addressRegion",
+                   order : { _term : "asc" }
                 }
               }
             }

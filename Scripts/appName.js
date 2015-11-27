@@ -5,16 +5,15 @@ var phoneNumber = function(pNumber)
     self.number = pNumber;
     return self;
 }
-     var dict = {};
-   var colors = d3.scale.category10().range();
-                var colorIndex = 0;
-                function getRandomColor() {
+var dict = {};
+var colors = d3.scale.category10().range();
+var colorIndex = 0;
 
-                    colorIndex = (colorIndex + 1) % colors.length;
-                    return colors[colorIndex];
+function getRandomColor() {
+  colorIndex = (colorIndex + 1) % colors.length;
+  return colors[colorIndex];
+}
 
-
-                }
 var app = angular.module("D3Graphics", []);
 
 
@@ -259,23 +258,13 @@ app.directive("lineChart", function() {
                             'offset': offsetObj
 
                         },
-
-
                     });
-                   
-
-
-                
-                
             });
-            
-
-       
         }
-
     };
-
 });
+
+
 
 
 
@@ -397,13 +386,21 @@ app.directive("pieChart", function() {
 
 
                     });
-                
 
+                    if (myValues.length == 1){
+                      myValues.push(0);
+                    }
+                    $('#barChart-' + scope.idVal).sparkline(myValues, 
+                      {type: 'bar', 
+                      colorMap: colorsArray,
+                      tooltipFormat: 'Age:{{offset:offset}} - {{value}}',
+                      tooltipValueLookups: {
 
+                            'offset': offsetObj
 
-                
+                        }
 
-
+                    });
                 // D3 code goes here.
             });
         
