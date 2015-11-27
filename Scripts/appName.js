@@ -390,15 +390,17 @@ app.directive("pieChart", function() {
                     if (myValues.length == 1){
                       myValues.push(0);
                     }
+
                     $('#barChart-' + scope.idVal).sparkline(myValues, 
                       {type: 'bar', 
                       colorMap: colorsArray,
-                      tooltipFormat: 'Age:{{offset:offset}} - {{value}}',
-                      tooltipValueLookups: {
-
-                            'offset': offsetObj
-
+                      tooltipFormatter : function(sparkline, options, fields){
+                        if( fields[0].value == 0){
+                          return ""
+                        } else {
+                          return "Age:" + offsetObj[fields[0].offset] + " - " + fields[0].value;
                         }
+                      }
 
                     });
                 // D3 code goes here.
