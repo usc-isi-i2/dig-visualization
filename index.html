@@ -112,8 +112,8 @@
       <div class="btn-group" data-toggle="buttons">    
         <div ng-repeat="phoneNumber in phoneNumbers">
           <div class="btn-group" data-toggle="buttons-checkbox">
-            <input type="checkbox" id="checkbox-{{phoneNumber.number}}" data-toggle="button" name="phone-checkbox" onclick="addPhoneNumbers()">
-            <label class="btn btn-primary btn-xs" for="checkbox-{{phoneNumber.number}}" id="glyph-button-{{phoneNumber.number}}">
+            <input type="checkbox" id="checkbox-{{phoneNumber.number}}" data-toggle="button" name="phone-checkbox" onclick="addPhoneNumbers()" style="visibility:hidden">
+            <label class="btn btn-info btn-xs" for="checkbox-{{phoneNumber.number}}" id="glyph-button-{{phoneNumber.number}}">
               <span class="glyphicon glyphicon-globe"></span>
             </label>
           </div>

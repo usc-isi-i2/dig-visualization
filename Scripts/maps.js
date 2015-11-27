@@ -6,10 +6,17 @@
       var checkboxesChecked = [];
       // loop over them all
       for (var i=0; i<checkboxes.length; i++) {
+        var id = checkboxes[i].id.split("-")[1];
+        id = "#glyph-button-" + id;
          // And stick the checked ones onto an array...
          if (checkboxes[i].checked) {
             var phoneNumber = '"' + checkboxes[i].id.split("-")[1] + '"';
             checkboxesChecked.push(phoneNumber);
+            $( id ).addClass( "active" );
+         }else{
+          if ($( id ).hasClass( "active" )){
+            $( id ).removeClass( "active" );
+          }
          }
       }
       if ( checkboxesChecked.length > 0 ){
