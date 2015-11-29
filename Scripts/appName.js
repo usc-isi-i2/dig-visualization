@@ -387,9 +387,9 @@ app.directive("pieChart", function() {
 
                     });
 
-                    if (myValues.length == 1){
-                      myValues.push(0);
-                    }
+                    // Adding 0 to everything so that 0 will be the smallest value, and the rest of the values are to scale.
+                    myValues.push(0);
+                    // Need to use chartRangeMin and chartRangeMax to specify the same scale for all bar graphs.
 
                     $('#barChart-' + scope.idVal).sparkline(myValues, 
                       {type: 'bar', 
