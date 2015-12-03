@@ -33,7 +33,7 @@ app.controller('MainCtrl', function($scope) {
               headers:{'Authorization' : 'Basic ZGFycGFtZW1leDpkYXJwYW1lbWV4'},
               protocol: 'http',
               port: '8081',
-              path: 'dig-ht-latest',
+              path: 'dig-ht-latest/seller',
               log: 'trace',
              
             }

@@ -7,7 +7,7 @@ var nameQuery = { query: {
                  "second_level" : {
                    "terms": {
                       
-                   "field":"mainEntity.seller.telephone.name",
+                   "field":"telephone.name",
                    "size" : "30"
                }
                  }
