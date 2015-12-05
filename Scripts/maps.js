@@ -10,7 +10,7 @@
         id = "#glyph-button-" + id;
          // And stick the checked ones onto an array...
          if (checkboxes[i].checked) {
-            var phoneNumber = '"' + checkboxes[i].id.split("-")[1] + '"';
+            var phoneNumber = checkboxes[i].id.split("-")[1];
             checkboxesChecked.push(phoneNumber);
             $( id ).addClass( "active" );
          }else{
@@ -20,7 +20,7 @@
          }
       }
       if ( checkboxesChecked.length > 0 ){
-        var phoneStrings = checkboxesChecked.join(" , ");
+        var phoneStrings = checkboxesChecked.join(",");
         drawSpecificMap(phoneStrings);
       } else {
         drawClusterMap();
@@ -86,7 +86,7 @@
     }
      
     }).then(function (resp) {
-        console.log(resp);
+        //console.log(resp);
             // D3 code goes here.
         var firstLevelbucketItems = resp.aggregations.in_phone.buckets;
         var firstLevelbucketCount = resp.aggregations.in_phone.buckets.length;
@@ -127,7 +127,13 @@
    
 }
   function drawSpecificMap( phoneNumbers ){
-      console.log(phoneNumbers);
+     
+	 
+	 var phoneList = [];
+	 var phones = phoneNumbers.split(",");
+	 for(var i=0;i<phones.length;i++)
+		phoneList.push(phones[i]);
+	
       var client = new elasticsearch.Client({
           host : [
             {
@@ -154,7 +160,7 @@
                     query: {
                       filtered: {
                         filter: {
-                          term: { "telephone.name": [phoneNumbers] }
+                          term: { "telephone.name": [phoneList] }
                         }
                       }
                     },
@@ -177,6 +183,7 @@
                         size: 1,
                         _source: {
                             include: [
+							  "telephone.name",
                               "makesOffer.availableAtOrFrom.geo",
                               "makesOffer.availableAtOrFrom.address.addressLocality"
                               ]
@@ -218,7 +225,7 @@
               '"coordinates"'+':'+ '['+latitude+','+ longitude+']'+
               '},"type": "Feature",'+
               '"properties"'+' : {'+'"radius"'+':'+radius+','+'"plottingRadius"'+':'+plottingRadius+','+'"color"'+':'+'"'+circleColor+'"'+
-              ','+'"place"'+':'+'"'+address+'"'+','+'"phoneNumber"'+':'+'"'+phoneNumber+'"'+'}}';
+              ','+'"place"'+':'+'"'+address+'"'+','+'"phoneNumber"'+':'+'"'+phoneNumbers+'"'+'}}';
           
               }
               else 
@@ -230,7 +237,7 @@
               '"coordinates"'+':'+ '['+latitude+','+ longitude+']'+
               '},"type": "Feature",'+
               '"properties"'+' : {'+'"radius"'+':'+radius+','+'"plottingRadius"'+':'+plottingRadius+','+'"color"'+':'+'"'+circleColor+'"'+
-              ','+'"place"'+':'+'"'+address+'"'+','+'"phoneNumber"'+':'+'"'+phoneNumber+'"'+'}},';
+              ','+'"place"'+':'+'"'+address+'"'+','+'"phoneNumber"'+':'+'"'+phoneNumbers+'"'+'}},';
           
           
               } 
@@ -270,7 +277,7 @@
               // load the geojson to the map with marker styling
             L.geoJson(geojson,{
                 pointToLayer: function (feature, latlng) {
-                  console.log(latlng);
+                 // console.log(latlng);
                   var popupOptions = {maxWidth: 200};
                   var circleColor = feature.properties.color;
                   var radius = feature.properties.radius;
@@ -286,7 +293,7 @@
     
   function display(points,phoneList){
           
-    console.log(points);
+    //console.log(points);
     //needed to reload the map.
     document.getElementById('phone-map').innerHTML = "<div id='map' style='width: <?php echo $this->width; ?>; height: <?php echo $this->height; ?>;'></div>";
           
