@@ -124,7 +124,7 @@
           {{phoneNumber.number}}
           <pie-chart id="pieChart-{{phoneNumber.number}}" dispVal = "State - " idVal="{{phoneNumber.number}}" valueQuery="mainEntity.availableAtOrFrom.address.addressRegion"  number="{{phoneNumber.number}}"></pie-chart>
           <pie-chart id="pieChart-{{$index}}" idVal="{{$index}}" dispVal = "Age - " valueQuery="mainEntity.itemOffered.personAge"  number="{{phoneNumber.number}}"></pie-chart>
-          <bar-chart id="barChart-{{$index}}"></bar-chart>
+          <bar-chart id="barChart-{{$index}}" idVal="{{$index}}" dispVal = "Age - " valueQuery="mainEntity.itemOffered.personAge"  number="{{phoneNumber.number}}"></bar-chart>
           <line-chart id="lineChart-{{$index}}" idVal="{{$index}}"   number="{{phoneNumber.number}}"></line-chart>
         </div>
       </div>

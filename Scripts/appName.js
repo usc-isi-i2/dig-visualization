@@ -68,7 +68,8 @@ app.controller('MainCtrl', function($scope) {
   $scope.clearVis = function()
   {
       $("#pieChart").html("");
-       $("#lineChart").html("");
+      $("#barChart").html("");
+      $("#lineChart").html("");
       
   }
   
@@ -383,27 +384,8 @@ app.directive("pieChart", function() {
                             'offset': offsetObj
 
                         },
-
-
                     });
-
-                    // Adding 0 to everything so that 0 will be the smallest value, and the rest of the values are to scale.
-                    myValues.push(0);
-                    // Need to use chartRangeMin and chartRangeMax to specify the same scale for all bar graphs.
-
-                    $('#barChart-' + scope.idVal).sparkline(myValues, 
-                      {type: 'bar', 
-                      colorMap: colorsArray,
-                      tooltipFormatter : function(sparkline, options, fields){
-                        if( fields[0].value == 0){
-                          return ""
-                        } else {
-                          return "Age:" + offsetObj[fields[0].offset] + " - " + fields[0].value;
-                        }
-                      }
-
-                    });
-                // D3 code goes here.
+                    
             });
         
         }
@@ -413,3 +395,93 @@ app.directive("pieChart", function() {
 
 });
 
+
+app.directive("barChart", function() {
+
+    return {
+       restrict : 'E',
+        replace: true,
+       
+      
+        template: function (elem, attr) {
+
+            return '<span></span>'
+
+
+        },  
+        
+        scope: {
+            control: '=control'
+        },
+      
+        link: function (scope, element, attrs) {
+            
+            scope.valueQuery = attrs.valuequery;
+            scope.idVal = attrs.idval;
+            scope.dispVal = attrs.dispval;
+            var client = new elasticsearch.Client({
+              host : [{
+                host: '54.69.161.139',
+                headers:{'Authorization' : 'Basic ZGFycGFtZW1leDpkYXJwYW1lbWV4'},
+                protocol: 'http',
+                port: '8081',
+                path: 'dig-ht-latest',
+                log: 'trace'
+              }]
+            });
+         
+            var queryJson = {};
+            var query = aggOnPhoneQuery;
+            query.aggs.first_level.terms.field = scope.valueQuery;
+            query.query.match["mainEntity.seller.telephone.name"] = ""+ attrs.number + ""; 
+            
+            queryJson.body = query;
+           
+           
+            client.search(queryJson).then(function (resp) {
+              var aggregationsFirstlevel = resp.aggregations.first_level;
+              var firstLevelCount = aggregationsFirstlevel.buckets.length;
+              var colorsArray = [];
+                
+                  
+              var myValues = [];
+              var offsetObj = {};
+              var totalDisplayed = 0;
+
+              for (var i = 0; i < firstLevelCount; i++) {
+                var firstLevelBucket = aggregationsFirstlevel.buckets[i];
+                myValues.push(firstLevelBucket.doc_count);
+                offsetObj[i] = firstLevelBucket.key;
+                if (dict[firstLevelBucket.key]) {
+                  colorsArray[i] = dict[firstLevelBucket.key];
+                } else {
+                  dict[firstLevelBucket.key] = getRandomColor();
+                  colorsArray[i] = dict[firstLevelBucket.key];
+                }
+                totalDisplayed += firstLevelBucket.doc_count;
+              }
+              // Adding 0 to everything so that 0 will be the smallest value, and the rest of the values are to scale.
+              myValues.push(0);
+              // Need to use chartRangeMin and chartRangeMax to specify the same scale for all bar graphs.
+              $('#barChart-' + scope.idVal).sparkline(myValues, {
+                  type: 'bar', 
+                  colorMap: colorsArray,
+                  tooltipFormatter : function(sparkline, options, fields){
+                    if( fields[0].value == 0){
+                      return ""
+                    } else {
+                      return "Age:" + offsetObj[fields[0].offset] + " - " + fields[0].value;
+                    }
+                  }
+
+              });
+              // End sparkline
+                
+            });
+          // End client.search.then
+        }
+        // End link   
+    };
+    // End return
+});
+// End directive
