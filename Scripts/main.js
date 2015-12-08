@@ -33,6 +33,9 @@ define(['d3', 'd3Tip', 'nvd3', 'moment'], function (d3, d3Tip,nv,moment) {
 
     var reset = document.getElementById("formreset");
     function resetQuery(){
+      //Resetting the map
+      drawClusterMap();
+      
       getSpan(client,moment).then( function(span){
         d3.selectAll("svg > *").remove();
         drawTimeline(client,d3,d3Tip,nv,span,"")
