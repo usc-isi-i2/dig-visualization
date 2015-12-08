@@ -1,6 +1,6 @@
 "use strict";
     drawClusterMap();
-
+	var features = "";
     function addPhoneNumbers() {
       var checkboxes = document.getElementsByName("phone-checkbox");
       var checkboxesChecked = [];
@@ -127,14 +127,26 @@
    
 }
   function drawSpecificMap( phoneNumbers ){
-     
-	 
-	 var phoneList = [];
+    
 	 var phones = phoneNumbers.split(",");
 	 for(var i=0;i<phones.length;i++)
-		phoneList.push(phones[i]);
+	 {
+		constructFeatures(phones[i]);
+		
+	 }
 	
-      var client = new elasticsearch.Client({
+	
+        //console.log(jsonData);
+        displayCustom(features);
+            
+	
+      
+    }
+	
+	function constructFeatures(number1)
+	{
+		
+		var client = new elasticsearch.Client({
           host : [
             {
               host: '54.69.161.139',
@@ -160,7 +172,7 @@
                     query: {
                       filtered: {
                         filter: {
-                          term: { "telephone.name": [phoneList] }
+                          term: { "telephone.name": number1 }
                         }
                       }
                     },
@@ -183,7 +195,6 @@
                         size: 1,
                         _source: {
                             include: [
-							  "telephone.name",
                               "makesOffer.availableAtOrFrom.geo",
                               "makesOffer.availableAtOrFrom.address.addressLocality"
                               ]
@@ -199,9 +210,7 @@
       
       var firstLevelbucketItems = resp.aggregations.in_address.buckets;
       var firstLevelbucketCount = resp.aggregations.in_address.buckets.length;
-      var features = "";
-      var jsonData = "";
-        
+    
       var j = 0;
       for(var i=0;i<firstLevelbucketCount;i++)
       {
@@ -217,46 +226,32 @@
               var longitude = makesOffer.availableAtOrFrom.geo.lat;
               var latitude = makesOffer.availableAtOrFrom.geo.lon;
               
-              if(i == firstLevelbucketCount-1)
-              {
-              
               features+= '{"geometry"'+' : {'+
               '"type"'+':'+'"Point"'+','+
               '"coordinates"'+':'+ '['+latitude+','+ longitude+']'+
               '},"type": "Feature",'+
               '"properties"'+' : {'+'"radius"'+':'+radius+','+'"plottingRadius"'+':'+plottingRadius+','+'"color"'+':'+'"'+circleColor+'"'+
-              ','+'"place"'+':'+'"'+address+'"'+','+'"phoneNumber"'+':'+'"'+phoneNumbers+'"'+'}}';
+              ','+'"place"'+':'+'"'+address+'"'+','+'"phoneNumber"'+':'+'"'+number1+'"'+'}},';
           
-              }
-              else 
-              {
-            
               
-              features+= '{"geometry"'+' : {'+
-              '"type"'+':'+'"Point"'+','+
-              '"coordinates"'+':'+ '['+latitude+','+ longitude+']'+
-              '},"type": "Feature",'+
-              '"properties"'+' : {'+'"radius"'+':'+radius+','+'"plottingRadius"'+':'+plottingRadius+','+'"color"'+':'+'"'+circleColor+'"'+
-              ','+'"place"'+':'+'"'+address+'"'+','+'"phoneNumber"'+':'+'"'+phoneNumbers+'"'+'}},';
-          
-          
-              } 
             }
             
-      }
-        
-        jsonData = '{'+
-           '"type"'+':'+'"FeatureCollection"'+','+
-           '"features"'+': ['+features+']}';
-        console.log(jsonData);
-        displayCustom(jsonData);
-            
+      } 
+	    
       });
-    }
+	 
+	}
 
      function displayCustom(data){
-          
-          var geojson = JSON.parse(data);
+		 
+		 data = data.substring(0, data.length - 1);
+          var jsonData = "";
+		   jsonData = '{'+
+           '"type"'+':'+'"FeatureCollection"'+','+
+           '"features"'+': ['+data+']}';
+		   console.log(jsonData);
+		  features = "";
+          var geojson = JSON.parse(jsonData);
           //needed to reload the map.
           document.getElementById('phone-map').innerHTML = "<div id='map' style='width: <?php echo $this->width; ?>; height: <?php echo $this->height; ?>;'></div>";
           var map = new L.Map('map', {center: new L.LatLng(43.6481, -79.4042), zoom: 4});
@@ -280,9 +275,10 @@
                  // console.log(latlng);
                   var popupOptions = {maxWidth: 200};
                   var circleColor = feature.properties.color;
+				  var city = feature.properties.place;
                   var radius = feature.properties.radius;
                   var plottingRadius = feature.properties.plottingRadius;
-                  var popupContent = feature.properties.phoneNumber+" appears "+radius+" times in this city";
+                  var popupContent = feature.properties.phoneNumber+" appears "+radius+" times in "+city;
                   var marker = L.circleMarker(latlng,style(feature,circleColor));
                   marker.setRadius(plottingRadius).bindPopup(popupContent,popupOptions);
           
@@ -311,4 +307,5 @@
     }
 
     map.addLayer(markers);
+	
   }
